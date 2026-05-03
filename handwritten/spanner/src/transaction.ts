@@ -55,6 +55,18 @@ import * as uuid from 'uuid';
 
 const gcpApiConfig = require('./spanner_grpc_config.json');
 
+// Pre-compute a map for O(1) affinity lookups
+const methodToAffinityMap = new Map<string, any>();
+if (gcpApiConfig && gcpApiConfig.method) {
+  gcpApiConfig.method.forEach((m: any) => {
+    if (m.name && m.affinity) {
+      m.name.forEach((name: string) => {
+        methodToAffinityMap.set(name, m.affinity);
+      });
+    }
+  });
+}
+
 export type Rows = Array<Row | Json>;
 const RETRY_INFO_TYPE = 'type.googleapis.com/google.rpc.retryinfo';
 const RETRY_INFO_BIN = 'google.rpc.retryinfo-bin';
@@ -375,17 +387,21 @@ export class Snapshot extends EventEmitter {
       const method =
         rpcMethodName.charAt(0).toUpperCase() + rpcMethodName.slice(1);
       const fullRpcPath = `/google.spanner.v1.Spanner/${method}`;
-      const methodConfig = gcpApiConfig.method.find(m =>
-        m.name.includes(fullRpcPath),
-      );
-      return methodConfig?.affinity?.metadataKey || 'x-grpc-gcp-affinity-key';
+
+      const affinity = methodToAffinityMap.get(fullRpcPath);
+      return affinity?.metadataKey || 'x-grpc-gcp-affinity-key';
     };
 
     this.request = (config: any, callback: Function) => {
       if (this._affinityKey) {
         const headerName = getMetadataHeaderName(config.method);
-        config.headers = config.headers || {};
-        config.headers[headerName] = this._affinityKey;
+        config = {
+          ...config,
+          headers: {
+            ...(config.headers || {}),
+            [headerName]: this._affinityKey,
+          },
+        };
       }
       return session.request(config, callback);
     };
@@ -393,8 +409,13 @@ export class Snapshot extends EventEmitter {
     this.requestStream = (config: any) => {
       if (this._affinityKey) {
         const headerName = getMetadataHeaderName(config.method);
-        config.headers = config.headers || {};
-        config.headers[headerName] = this._affinityKey;
+        config = {
+          ...config,
+          headers: {
+            ...(config.headers || {}),
+            [headerName]: this._affinityKey,
+          },
+        };
       }
       return session.requestStream(config);
     };
@@ -1352,7 +1373,7 @@ export class Snapshot extends EventEmitter {
    * options as well as several convenience properties.
    *
    * @see [Query Syntax](https://cloud.google.com/spanner/docs/query-syntax)
-   * @see [ExecuteSql API Documentation](https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.v1#google.spanner.v1.ExecuteSql)
+   * @see [ExecuteSql API Documentation](https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.v1#google.spanner.v1.Spanner.ExecuteSql)
    *
    * @typedef {object} ExecuteSqlRequest
    * @property {string} resumeToken The token used to resume getting results.
@@ -2487,11 +2508,11 @@ export class Transaction extends Dml {
         // Signal to grpc-gcp to unbind the affinity key and clean up memory
         // since this transaction is now complete.
         if (this._affinityKey) {
-          const commitConfig = gcpApiConfig.method.find(m =>
-            m.name.includes('/google.spanner.v1.Spanner/Commit'),
+          const affinity = methodToAffinityMap.get(
+            '/google.spanner.v1.Spanner/Commit',
           );
           const unbindHeaderName =
-            commitConfig?.affinity?.unbindMetadataKey || 'x-grpc-gcp-unbind';
+            affinity?.unbindMetadataKey || 'x-grpc-gcp-unbind';
           requestHeaders[unbindHeaderName] = 'true';
         }
 
@@ -2867,11 +2888,11 @@ export class Transaction extends Dml {
       // Signal to grpc-gcp to unbind the affinity key and clean up memory
       // since this transaction is now complete.
       if (this._affinityKey) {
-        const rollbackConfig = gcpApiConfig.method.find(m =>
-          m.name.includes('/google.spanner.v1.Spanner/Rollback'),
+        const affinity = methodToAffinityMap.get(
+          '/google.spanner.v1.Spanner/Rollback',
         );
         const unbindHeaderName =
-          rollbackConfig?.affinity?.unbindMetadataKey || 'x-grpc-gcp-unbind';
+          affinity?.unbindMetadataKey || 'x-grpc-gcp-unbind';
         requestHeaders[unbindHeaderName] = 'true';
       }
 
