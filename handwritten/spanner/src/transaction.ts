@@ -383,23 +383,19 @@ export class Snapshot extends EventEmitter {
     if (session.metadata && session.metadata.multiplexed) {
       this._affinityKey = uuid.v4();
     }
-    const getMetadataHeaderName = (rpcMethodName: string): string => {
-      const method =
-        rpcMethodName.charAt(0).toUpperCase() + rpcMethodName.slice(1);
-      const fullRpcPath = `/google.spanner.v1.Spanner/${method}`;
-
-      const affinity = methodToAffinityMap.get(fullRpcPath);
-      return affinity?.metadataKey || 'x-grpc-gcp-affinity-key';
-    };
-
     this.request = (config: any, callback: Function) => {
       if (this._affinityKey) {
-        const headerName = getMetadataHeaderName(config.method);
         config = {
           ...config,
-          headers: {
-            ...(config.headers || {}),
-            [headerName]: this._affinityKey,
+          gaxOpts: {
+            ...(config.gaxOpts || {}),
+            otherArgs: {
+              ...(config.gaxOpts?.otherArgs || {}),
+              options: {
+                ...(config.gaxOpts?.otherArgs?.options || {}),
+                affinityKey: this._affinityKey,
+              },
+            },
           },
         };
       }
@@ -408,12 +404,17 @@ export class Snapshot extends EventEmitter {
 
     this.requestStream = (config: any) => {
       if (this._affinityKey) {
-        const headerName = getMetadataHeaderName(config.method);
         config = {
           ...config,
-          headers: {
-            ...(config.headers || {}),
-            [headerName]: this._affinityKey,
+          gaxOpts: {
+            ...(config.gaxOpts || {}),
+            otherArgs: {
+              ...(config.gaxOpts?.otherArgs || {}),
+              options: {
+                ...(config.gaxOpts?.otherArgs?.options || {}),
+                affinityKey: this._affinityKey,
+              },
+            },
           },
         };
       }
@@ -1080,6 +1081,24 @@ export class Snapshot extends EventEmitter {
 
     this.ended = true;
     process.nextTick(() => this.emit('end'));
+
+    if (this._affinityKey) {
+      const database = this.session.parent as Database;
+      const spanner = database.spanner;
+      const client = spanner.clients_.get('SpannerClient') as any;
+      if (client && client.spannerStub) {
+        client.spannerStub
+          .then((stub: any) => {
+            if (stub && typeof stub.getChannel === 'function') {
+              const channel = stub.getChannel();
+              if (channel && typeof channel.unbind === 'function') {
+                channel.unbind(this._affinityKey);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+    }
   }
 
   /**
@@ -2502,31 +2521,30 @@ export class Transaction extends Dml {
           addLeaderAwareRoutingHeader(headers);
         }
 
-        // Create a copy to avoid leaking the unbind header to the global commonHeaders_.
-        const requestHeaders = Object.assign({}, headers);
-
-        // Signal to grpc-gcp to unbind the affinity key and clean up memory
-        // since this transaction is now complete.
-        if (this._affinityKey) {
-          const affinity = methodToAffinityMap.get(
-            '/google.spanner.v1.Spanner/Commit',
-          );
-          const unbindHeaderName =
-            affinity?.unbindMetadataKey || 'x-grpc-gcp-unbind';
-          requestHeaders[unbindHeaderName] = 'true';
-        }
-
         span.addEvent('Starting Commit');
 
         const database = this.session.parent as Database;
+        let newGaxOpts = gaxOpts;
+        if (this._affinityKey) {
+          newGaxOpts = Object.assign({}, gaxOpts, {
+            otherArgs: {
+              ...((gaxOpts as any)?.otherArgs || {}),
+              options: {
+                ...((gaxOpts as any)?.otherArgs?.options || {}),
+                unbind: true,
+              },
+            },
+          });
+        }
+
         this.request(
           {
             client: 'SpannerClient',
             method: 'commit',
             reqOpts,
-            gaxOpts: gaxOpts,
+            gaxOpts: newGaxOpts,
             headers: injectRequestIDIntoHeaders(
-              requestHeaders,
+              headers,
               this.session,
               nextNthRequest(database),
               1,
@@ -2882,18 +2900,17 @@ export class Transaction extends Dml {
         addLeaderAwareRoutingHeader(headers);
       }
 
-      // Create a copy to avoid leaking the unbind header to the global commonHeaders_.
-      const requestHeaders = Object.assign({}, headers);
-
-      // Signal to grpc-gcp to unbind the affinity key and clean up memory
-      // since this transaction is now complete.
+      let newGaxOpts = gaxOpts;
       if (this._affinityKey) {
-        const affinity = methodToAffinityMap.get(
-          '/google.spanner.v1.Spanner/Rollback',
-        );
-        const unbindHeaderName =
-          affinity?.unbindMetadataKey || 'x-grpc-gcp-unbind';
-        requestHeaders[unbindHeaderName] = 'true';
+        newGaxOpts = Object.assign({}, gaxOpts, {
+          otherArgs: {
+            ...((gaxOpts as any)?.otherArgs || {}),
+            options: {
+              ...((gaxOpts as any)?.otherArgs?.options || {}),
+              unbind: true,
+            },
+          },
+        });
       }
 
       this.request(
@@ -2901,8 +2918,8 @@ export class Transaction extends Dml {
           client: 'SpannerClient',
           method: 'rollback',
           reqOpts,
-          gaxOpts,
-          headers: requestHeaders,
+          gaxOpts: newGaxOpts,
+          headers: headers,
         },
         (err: null | ServiceError) => {
           if (err) {
