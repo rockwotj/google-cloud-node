@@ -1695,8 +1695,7 @@ class Spanner extends GrpcService {
         callback(err, null);
       }
       const gaxClient = this.clients_.get(clientName)!;
-      let reqOpts = extend(true, {}, config.reqOpts);
-      reqOpts = replaceProjectIdToken(reqOpts, projectId!);
+      const reqOpts = replaceProjectIdToken(config.reqOpts, projectId!);
       // It would have been preferable to replace the projectId already in the
       // constructor of Spanner, but that is not possible as auth.getProjectId
       // is an async method. This is therefore the first place where we have

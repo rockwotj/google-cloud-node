@@ -51,7 +51,6 @@ import {
 } from './instrument';
 import {RunTransactionOptions} from './transaction-runner';
 import {injectRequestIDIntoHeaders, nextNthRequest} from './request_id_header';
-import * as uuid from 'uuid';
 
 const gcpApiConfig = require('./spanner_grpc_config.json');
 
@@ -310,6 +309,8 @@ export class Snapshot extends EventEmitter {
     | null;
   id?: Uint8Array | string;
   public _affinityKey?: string;
+  public _bindGaxOpts?: CallOptions;
+  public _unbindGaxOpts?: CallOptions;
   multiplexedSessionPreviousTransactionId?: Uint8Array | string;
   ended: boolean;
   metadata?: spannerClient.spanner.v1.ITransaction;
@@ -384,41 +385,60 @@ export class Snapshot extends EventEmitter {
     // multiplexed session to be distributed across different gRPC channels.
     if (session.metadata && session.metadata.multiplexed) {
       this._affinityKey = `mux-affinity-${process.pid}-${nextAffinityId++}`;
+      this._bindGaxOpts = {
+        otherArgs: {
+          options: {
+            affinityKey: this._affinityKey,
+          },
+        },
+      };
+      this._unbindGaxOpts = {
+        otherArgs: {
+          options: {
+            affinityKey: this._affinityKey,
+            unbind: true,
+          },
+        },
+      };
     }
     this.request = (config: any, callback: Function) => {
       if (this._affinityKey) {
-        config = {
-          ...config,
-          gaxOpts: {
-            ...(config.gaxOpts || {}),
-            otherArgs: {
-              ...(config.gaxOpts?.otherArgs || {}),
-              options: {
-                ...(config.gaxOpts?.otherArgs?.options || {}),
-                affinityKey: this._affinityKey,
-              },
-            },
-          },
-        };
+        if (!config.gaxOpts || Object.keys(config.gaxOpts).length === 0) {
+          config.gaxOpts = this._bindGaxOpts as any;
+        } else {
+          const tempOpts: any = Object.assign({}, config.gaxOpts);
+          tempOpts.otherArgs = Object.assign(
+            {},
+            (config.gaxOpts as any).otherArgs,
+          );
+          tempOpts.otherArgs.options = Object.assign(
+            {},
+            tempOpts.otherArgs.options,
+            {affinityKey: this._affinityKey},
+          );
+          config.gaxOpts = tempOpts;
+        }
       }
       return session.request(config, callback);
     };
 
     this.requestStream = (config: any) => {
       if (this._affinityKey) {
-        config = {
-          ...config,
-          gaxOpts: {
-            ...(config.gaxOpts || {}),
-            otherArgs: {
-              ...(config.gaxOpts?.otherArgs || {}),
-              options: {
-                ...(config.gaxOpts?.otherArgs?.options || {}),
-                affinityKey: this._affinityKey,
-              },
-            },
-          },
-        };
+        if (!config.gaxOpts || Object.keys(config.gaxOpts).length === 0) {
+          config.gaxOpts = this._bindGaxOpts as any;
+        } else {
+          const tempOpts: any = Object.assign({}, config.gaxOpts);
+          tempOpts.otherArgs = Object.assign(
+            {},
+            (config.gaxOpts as any).otherArgs,
+          );
+          tempOpts.otherArgs.options = Object.assign(
+            {},
+            tempOpts.otherArgs.options,
+            {affinityKey: this._affinityKey},
+          );
+          config.gaxOpts = tempOpts;
+        }
       }
       return session.requestStream(config);
     };
@@ -1089,16 +1109,24 @@ export class Snapshot extends EventEmitter {
       const spanner = database.spanner;
       const client = spanner.clients_.get('SpannerClient') as any;
       if (client && client.spannerStub) {
-        client.spannerStub
-          .then((stub: any) => {
-            if (stub && typeof stub.getChannel === 'function') {
-              const channel = stub.getChannel();
-              if (channel && typeof channel.unbind === 'function') {
-                channel.unbind(this._affinityKey);
+        if (client._resolvedSpannerStub) {
+          const channel = client._resolvedSpannerStub.getChannel();
+          if (channel && typeof channel.unbind === 'function') {
+            channel.unbind(this._affinityKey);
+          }
+        } else {
+          client.spannerStub
+            .then((stub: any) => {
+              client._resolvedSpannerStub = stub;
+              if (stub && typeof stub.getChannel === 'function') {
+                const channel = stub.getChannel();
+                if (channel && typeof channel.unbind === 'function') {
+                  channel.unbind(this._affinityKey);
+                }
               }
-            }
-          })
-          .catch(() => {});
+            })
+            .catch(() => {});
+        }
       }
     }
   }
@@ -2528,15 +2556,18 @@ export class Transaction extends Dml {
         const database = this.session.parent as Database;
         let newGaxOpts = gaxOpts;
         if (this._affinityKey) {
-          newGaxOpts = Object.assign({}, gaxOpts, {
-            otherArgs: {
-              ...((gaxOpts as any)?.otherArgs || {}),
-              options: {
-                ...((gaxOpts as any)?.otherArgs?.options || {}),
-                unbind: true,
-              },
-            },
-          });
+          if (!gaxOpts || Object.keys(gaxOpts).length === 0) {
+            newGaxOpts = this._unbindGaxOpts as any;
+          } else {
+            const tempOpts: any = Object.assign({}, gaxOpts);
+            tempOpts.otherArgs = Object.assign({}, (gaxOpts as any).otherArgs);
+            tempOpts.otherArgs.options = Object.assign(
+              {},
+              tempOpts.otherArgs.options,
+              {unbind: true},
+            );
+            newGaxOpts = tempOpts;
+          }
         }
 
         this.request(
@@ -2904,15 +2935,18 @@ export class Transaction extends Dml {
 
       let newGaxOpts = gaxOpts;
       if (this._affinityKey) {
-        newGaxOpts = Object.assign({}, gaxOpts, {
-          otherArgs: {
-            ...((gaxOpts as any)?.otherArgs || {}),
-            options: {
-              ...((gaxOpts as any)?.otherArgs?.options || {}),
-              unbind: true,
-            },
-          },
-        });
+        if (!gaxOpts || Object.keys(gaxOpts).length === 0) {
+          newGaxOpts = this._unbindGaxOpts as any;
+        } else {
+          const tempOpts: any = Object.assign({}, gaxOpts);
+          tempOpts.otherArgs = Object.assign({}, (gaxOpts as any).otherArgs);
+          tempOpts.otherArgs.options = Object.assign(
+            {},
+            tempOpts.otherArgs.options,
+            {unbind: true},
+          );
+          newGaxOpts = tempOpts;
+        }
       }
 
       this.request(

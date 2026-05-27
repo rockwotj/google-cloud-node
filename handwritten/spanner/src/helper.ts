@@ -337,20 +337,25 @@ export function replaceProjectIdToken(value: any, projectId: string): any {
   }
 
   if (Array.isArray(value)) {
+    let clonedArray: any[] | null = null;
     for (let i = 0; i < value.length; i++) {
       const original = value[i];
       const processed = replaceProjectIdToken(original, projectId);
       if (processed !== original) {
-        value[i] = processed;
+        if (!clonedArray) {
+          clonedArray = [...value];
+        }
+        clonedArray[i] = processed;
       }
     }
-    return value;
+    return clonedArray || value;
   }
 
   if (value instanceof Buffer || value instanceof Stream || isDate(value)) {
     return value;
   }
 
+  let clonedObj: any | null = null;
   for (const key in value) {
     if (Object.prototype.hasOwnProperty.call(value, key)) {
       if (!KEYS_TO_SCAN.has(key)) {
@@ -359,12 +364,15 @@ export function replaceProjectIdToken(value: any, projectId: string): any {
       const original = value[key];
       const processed = replaceProjectIdToken(original, projectId);
       if (processed !== original) {
-        value[key] = processed;
+        if (!clonedObj) {
+          clonedObj = {...value};
+        }
+        clonedObj[key] = processed;
       }
     }
   }
 
-  return value;
+  return clonedObj || value;
 }
 
 /**

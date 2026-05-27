@@ -118,14 +118,16 @@ describe('helper', () => {
       });
     });
 
-    it('should throw if a frozen object contains a placeholder because mutation is illegal', () => {
+    it('should support frozen objects by returning a clone instead of mutating in-place', () => {
       const frozenObj = Object.freeze({
         name: 'projects/{{projectId}}',
       });
-
-      assert.throws(() => {
-        replaceProjectIdToken(frozenObj, projectId);
-      }, /Cannot assign to read only property/);
+      const expected = {
+        name: 'projects/my-project-id',
+      };
+      const result = replaceProjectIdToken(frozenObj, projectId);
+      assert.deepStrictEqual(result, expected);
+      assert.notStrictEqual(result, frozenObj);
     });
 
     it('should replace more than one {{projectId}}', () => {
