@@ -62,14 +62,8 @@ function checkPrettierFormatting() {
   });
 
   if (filesToCheck.length === 0) {
-    console.log('No changed files to check for formatting.');
     return;
   }
-
-  console.log(
-    `Checking formatting for ${filesToCheck.length} changed file(s) against ${baseBranch}...`,
-  );
-  filesToCheck.forEach(f => console.log(`  - ${f}`));
 
   try {
     // Run prettier check using npx prettier
@@ -78,9 +72,6 @@ function checkPrettierFormatting() {
       {
         stdio: 'inherit',
       },
-    );
-    console.log(
-      '\nFormatting check passed! All changed files adhere to the Prettier guidelines.',
     );
   } catch (err) {
     console.error(
