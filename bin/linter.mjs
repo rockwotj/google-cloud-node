@@ -54,39 +54,43 @@ function getChangedFiles() {
   }
 }
 
-const allChangedFiles = getChangedFiles();
-const filesToCheck = allChangedFiles.filter(file => {
-  const ext = path.extname(file).toLowerCase();
-  return targetExtensions.has(ext);
-});
+function checkPrettierFormatting() {
+  const allChangedFiles = getChangedFiles();
+  const filesToCheck = allChangedFiles.filter(file => {
+    const ext = path.extname(file).toLowerCase();
+    return targetExtensions.has(ext);
+  });
 
-if (filesToCheck.length === 0) {
-  console.log('No changed files to check for formatting.');
-  process.exit(0);
-}
+  if (filesToCheck.length === 0) {
+    console.log('No changed files to check for formatting.');
+    return;
+  }
 
-console.log(
-  `Checking formatting for ${filesToCheck.length} changed file(s) against ${baseBranch}...`,
-);
-filesToCheck.forEach(f => console.log(`  - ${f}`));
-
-try {
-  // Run prettier check using npx prettier
-  execSync(
-    `npx prettier --check ${filesToCheck.map(f => `"${f}"`).join(' ')}`,
-    {
-      stdio: 'inherit',
-    },
-  );
   console.log(
-    '\nFormatting check passed! All changed files adhere to the Prettier guidelines.',
+    `Checking formatting for ${filesToCheck.length} changed file(s) against ${baseBranch}...`,
   );
-} catch (err) {
-  console.error(
-    '\nFormatting check failed! Please run the following command to format your files:',
-  );
-  console.error(
-    `  npx prettier --write ${filesToCheck.map(f => `"${f}"`).join(' ')}`,
-  );
-  process.exit(1);
+  filesToCheck.forEach(f => console.log(`  - ${f}`));
+
+  try {
+    // Run prettier check using npx prettier
+    execSync(
+      `npx prettier --check ${filesToCheck.map(f => `"${f}"`).join(' ')}`,
+      {
+        stdio: 'inherit',
+      },
+    );
+    console.log(
+      '\nFormatting check passed! All changed files adhere to the Prettier guidelines.',
+    );
+  } catch (err) {
+    console.error(
+      '\nFormatting check failed! Please run the following command to format your files:',
+    );
+    console.error(
+      `  npx prettier --write ${filesToCheck.map(f => `"${f}"`).join(' ')}`,
+    );
+    process.exit(1);
+  }
 }
+
+checkPrettierFormatting();
