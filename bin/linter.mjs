@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {execSync} from 'child_process';
+import {execFileSync} from 'child_process';
 import {existsSync} from 'fs';
 import path from 'path';
 
