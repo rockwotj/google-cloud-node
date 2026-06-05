@@ -55,8 +55,7 @@ function getChangedFiles() {
 }
 
 function checkPrettierFormatting() {
-  const allChangedFiles = getChangedFiles();
-  const filesToCheck = allChangedFiles.filter(file => {
+  const filesToCheck = getChangedFiles().filter(file => {
     const ext = path.extname(file).toLowerCase();
     return targetExtensions.has(ext);
   });
