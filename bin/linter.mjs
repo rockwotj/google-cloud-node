@@ -19,7 +19,7 @@ import {existsSync} from 'fs';
 import path from 'path';
 
 // Define the base branch to compare against
-const baseBranch = 'main';
+const baseBranch = process.env.GITHUB_BASE_REF || 'main';
 
 // Extensions to check with Prettier
 const targetExtensions = new Set([
