@@ -37,8 +37,9 @@ const targetExtensions = new Set([
 
 function getChangedFiles() {
   try {
-    const output = execSync(
-      `git diff --name-only --diff-filter=ACMRT ${baseBranch}`,
+    const output = execFileSync(
+      'git',
+      ['diff', '--name-only', '--diff-filter=ACMRT', baseBranch],
       {encoding: 'utf8'},
     );
     return output
@@ -66,12 +67,9 @@ function checkPrettierFormatting() {
 
   try {
     // Run prettier check using npx prettier
-    execSync(
-      `npx prettier --check ${filesToCheck.map(f => `"${f}"`).join(' ')}`,
-      {
-        stdio: 'inherit',
-      },
-    );
+    execFileSync('npx', ['prettier', '--check', ...filesToCheck], {
+      stdio: 'inherit',
+    });
   } catch (err) {
     console.error(
       '\nFormatting check failed! Please run the following command to format your files:',
