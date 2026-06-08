@@ -66,10 +66,14 @@ function checkPrettierFormatting() {
   }
 
   try {
-    // Run prettier check using npx prettier
-    execFileSync('npx', ['prettier', '--check', ...filesToCheck], {
-      stdio: 'inherit',
-    });
+    // Run prettier check using local prettier binary
+    execFileSync(
+      'node',
+      ['node_modules/prettier/bin/prettier.cjs', '--check', ...filesToCheck],
+      {
+        stdio: 'inherit',
+      },
+    );
   } catch (err) {
     console.error(
       '\nFormatting check failed! Please run the following command to format your files:',
