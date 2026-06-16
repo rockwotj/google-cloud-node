@@ -5,6 +5,13 @@
 
 [1]: https://www.npmjs.com/package/@google-cloud/profiler?activeTab=versions
 
+## [6.0.6](https://github.com/googleapis/google-cloud-node/compare/cloud-profiler-v6.0.5...cloud-profiler-v6.0.6) (2026-06-16)
+
+
+### Bug Fixes
+
+* **deps:** Update dependency protobufjs to v7.5.5 [security] ([#8071](https://github.com/googleapis/google-cloud-node/issues/8071)) ([ea623da](https://github.com/googleapis/google-cloud-node/commit/ea623da20f374cfa480fb9fdb7758afd0a993a8e))
+
 ## [6.0.5](https://github.com/googleapis/google-cloud-node/compare/cloud-profiler-v6.0.4...cloud-profiler-v6.0.5) (2026-05-11)
 
 
