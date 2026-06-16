@@ -4,6 +4,23 @@
     {
       "changes": [
         {
+          "type": "fix",
+          "sha": "66f5c91d832a90e50401eaf4cac0dfe3069c1b66",
+          "message": "Remove kokoro bigtable system tests",
+          "issues": [
+            "8319"
+          ]
+        }
+      ],
+      "version": "6.5.2",
+      "language": "JAVASCRIPT",
+      "artifactName": "@google-cloud/bigtable",
+      "id": "bee7fe4e-a8e9-43b0-8754-5c2baa9fc830",
+      "createTime": "2026-06-16T00:07:06.637Z"
+    },
+    {
+      "changes": [
+        {
           "type": "feat",
           "sha": "d56eb080b89bf58bd8235f4843f3801ecd1ae8be",
           "message": "Add space to readme",
@@ -80093,5 +80110,5 @@
       "createTime": "2023-01-28T04:18:24.718Z"
     }
   ],
-  "updateTime": "2026-06-08T17:51:13.237Z"
+  "updateTime": "2026-06-16T00:07:06.637Z"
 }
