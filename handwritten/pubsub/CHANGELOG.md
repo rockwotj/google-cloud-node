@@ -5,6 +5,14 @@
 
 [1]: https://www.npmjs.com/package/@google-cloud/pubsub?activeTab=versions
 
+## [5.3.2](https://github.com/googleapis/google-cloud-node/compare/pubsub-v5.3.1...pubsub-v5.3.2) (2026-06-16)
+
+
+### Bug Fixes
+
+* **deps:** Remove vulnerable dependency `uuid` ([#8120](https://github.com/googleapis/google-cloud-node/issues/8120)) ([3ec901e](https://github.com/googleapis/google-cloud-node/commit/3ec901e2cb45859adfbe914bc0385e6cdf2f2e9a))
+* **pubsub:** Increase streaming pull timeout ([#8345](https://github.com/googleapis/google-cloud-node/issues/8345)) ([08959de](https://github.com/googleapis/google-cloud-node/commit/08959de575487690194fe851414ac7f6357e29e2))
+
 ## [5.3.1](https://github.com/googleapis/google-cloud-node/compare/pubsub-v5.3.0...pubsub-v5.3.1) (2026-05-11)
 
 

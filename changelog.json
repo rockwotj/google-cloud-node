@@ -4,6 +4,33 @@
     {
       "changes": [
         {
+          "type": "fix",
+          "sha": "3ec901e2cb45859adfbe914bc0385e6cdf2f2e9a",
+          "message": "Remove vulnerable dependency `uuid`",
+          "issues": [
+            "8120"
+          ],
+          "scope": "deps"
+        },
+        {
+          "type": "fix",
+          "sha": "08959de575487690194fe851414ac7f6357e29e2",
+          "message": "Increase streaming pull timeout",
+          "issues": [
+            "8345"
+          ],
+          "scope": "pubsub"
+        }
+      ],
+      "version": "5.3.2",
+      "language": "JAVASCRIPT",
+      "artifactName": "@google-cloud/pubsub",
+      "id": "b0c49e17-3a63-4bb5-9f59-602e02bf07e0",
+      "createTime": "2026-06-16T00:07:06.542Z"
+    },
+    {
+      "changes": [
+        {
           "type": "feat",
           "sha": "d56eb080b89bf58bd8235f4843f3801ecd1ae8be",
           "message": "Add space to readme",
@@ -80093,5 +80120,5 @@
       "createTime": "2023-01-28T04:18:24.718Z"
     }
   ],
-  "updateTime": "2026-06-08T17:51:13.237Z"
+  "updateTime": "2026-06-16T00:07:06.542Z"
 }

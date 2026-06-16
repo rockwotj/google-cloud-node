@@ -32,7 +32,7 @@
   "handwritten/logging": "11.2.2",
   "handwritten/logging-bunyan": "5.1.2",
   "handwritten/logging-winston": "6.0.2",
-  "handwritten/pubsub": "5.3.1",
+  "handwritten/pubsub": "5.3.2",
   "handwritten/spanner": "8.7.1",
   "handwritten/storage": "7.21.0",
   "packages/google-ads-admanager": "0.6.0",
