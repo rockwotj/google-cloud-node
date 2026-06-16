@@ -190,7 +190,7 @@
   "packages/google-cloud-servicedirectory": "6.2.0",
   "packages/google-cloud-servicehealth": "0.8.0",
   "packages/google-cloud-shell": "4.2.0",
-  "packages/google-cloud-speech": "7.4.0",
+  "packages/google-cloud-speech": "7.5.0",
   "packages/google-cloud-sql": "0.24.1",
   "packages/google-cloud-storagebatchoperations": "0.5.0",
   "packages/google-cloud-storageinsights": "2.3.0",

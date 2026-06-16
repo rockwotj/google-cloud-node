@@ -1389,7 +1389,7 @@ libraries:
     nodejs:
       default_version: v1
   - name: google-cloud-speech
-    version: 7.4.0
+    version: 7.5.0
     apis:
       - path: google/cloud/speech/v2
       - path: google/cloud/speech/v1
