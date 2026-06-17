@@ -1238,22 +1238,22 @@ function parsePreciseDate(isoString: string): PreciseDate {
 
     const dotIndex = isoString.indexOf('.', 19);
     if (dotIndex !== -1) {
+      if (dotIndex !== 19) {
+        return new PreciseDate(isoString);
+      }
       const subSecondsStr = isoString.substring(
         dotIndex + 1,
         isoString.length - 1,
       );
+      if (!DIGITS_REGEX.test(subSecondsStr)) {
+        return new PreciseDate(isoString);
+      }
       const padded = subSecondsStr.padEnd(9, '0');
       milliseconds = Number(padded.substring(0, 3));
       microseconds = Number(padded.substring(3, 6));
       nanoseconds = Number(padded.substring(6, 9));
-
-      if (
-        Number.isNaN(milliseconds) ||
-        Number.isNaN(microseconds) ||
-        Number.isNaN(nanoseconds)
-      ) {
-        return new PreciseDate(isoString);
-      }
+    } else if (isoString.length !== 20) {
+      return new PreciseDate(isoString);
     }
 
     const utcMillis = Date.UTC(
@@ -1265,6 +1265,18 @@ function parsePreciseDate(isoString: string): PreciseDate {
       seconds,
       milliseconds,
     );
+
+    const dateCheck = new Date(utcMillis);
+    if (
+      dateCheck.getUTCFullYear() !== year ||
+      dateCheck.getUTCMonth() !== month ||
+      dateCheck.getUTCDate() !== day ||
+      dateCheck.getUTCHours() !== hours ||
+      dateCheck.getUTCMinutes() !== minutes ||
+      dateCheck.getUTCSeconds() !== seconds
+    ) {
+      return new PreciseDate(isoString);
+    }
 
     const preciseDate = new PreciseDate(utcMillis);
     preciseDate.setMicroseconds(microseconds);
